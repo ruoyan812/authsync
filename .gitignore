@@ -1,0 +1,27 @@
+# 依赖
+node_modules/
+
+# 构建产物（前端产出到 worker/dist，由 wrangler 一并部署）
+worker/dist/
+app/dist/
+app/.vite/
+.wrangler/
+
+# 环境变量与密钥（含敏感信息，禁止提交）
+worker/.dev.vars
+worker/.secrets.json
+server/.env
+server/local.db
+server/local.db-journal
+.env
+*.local
+
+# 日志
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# CodeBuddy 数据
+.codebuddy/

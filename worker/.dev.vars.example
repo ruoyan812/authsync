@@ -1,0 +1,17 @@
+# 本地开发用变量（复制为 .dev.vars 后填写，不要提交到 Git）
+
+# Turso 数据库地址（libsql:// 开头）
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+
+# Turso 访问令牌（turso db tokens create <db-name>）
+TURSO_AUTH_TOKEN=
+
+# AES-256 主密钥，64 位十六进制，用于加密 2FA 密钥
+# 生成: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+MASTER_KEY=
+
+# JWT 签名密钥，同样 64 位十六进制
+JWT_SECRET=
+
+# PBKDF2 迭代次数（免费版 Workers CPU 上限 10ms，建议 25000）
+PBKDF2_ITERATIONS=25000
