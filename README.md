@@ -1,5 +1,7 @@
 # AuthSync — Web 版两步验证（2FA）管理器
 
+> 线上地址：**https://2fa.roooooyan.work**（Cloudflare Workers 自定义域名）
+
 在浏览器中管理您的 TOTP 两步验证动态码，功能对标手机 Authenticator 应用。
 
 ## 功能
@@ -99,7 +101,7 @@ npx wrangler deploy
 ### 4. 验证部署
 
 ```bash
-node worker/scripts/smoke-test.mjs https://auth.yourdomain.com
+node worker/scripts/smoke-test.mjs https://2fa.roooooyan.work
 ```
 
 ## API 接口
