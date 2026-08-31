@@ -1,9 +1,9 @@
 import { Loader2 } from 'lucide-react'
 import { AuthPage } from '@/components/AuthPage'
 import { Dashboard } from '@/components/Dashboard'
-import { useAuth } from '@/hooks/useAuth'
+import { AuthProvider, useAuth } from '@/hooks/useAuth'
 
-export default function App() {
+function AppShell() {
   const { user, loading } = useAuth()
 
   if (loading) {
@@ -15,4 +15,12 @@ export default function App() {
   }
 
   return user ? <Dashboard /> : <AuthPage />
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
+  )
 }
