@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { ArrowLeft, KeyRound, Loader2, LogOut, Plus, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, KeyRound, Loader2, LogOut, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,6 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -240,12 +250,14 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
   const { user, logout } = useAuth()
   const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [otpUser, setOtpUser] = useState<AdminUser | null>(null)
+  const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (q = '') => {
     try {
-      const { users } = await api.listUsers()
+      const { users } = await api.listUsers(q)
       setUsers(users)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '加载用户失败')
@@ -254,9 +266,11 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
     }
   }, [])
 
+  // 搜索防抖：输入停止 300ms 后请求
   useEffect(() => {
-    load()
-  }, [load])
+    const t = setTimeout(() => load(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search, load])
 
   async function handleRoleChange(u: AdminUser, role: 'user' | 'admin') {
     try {
@@ -265,6 +279,18 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
       toast.success(`已将 ${u.email} 设为${role === 'admin' ? '管理员' : '普通用户'}`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '操作失败')
+    }
+  }
+
+  async function handleDelete(u: AdminUser) {
+    try {
+      await api.deleteUser(u.id)
+      setUsers((prev) => prev.filter((x) => x.id !== u.id))
+      toast.success(`已删除 ${u.email}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '删除失败')
+    } finally {
+      setDeleteUser(null)
     }
   }
 
@@ -300,12 +326,23 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
           <div>
             <h1 className="text-2xl font-bold">用户管理</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              共 {users.length} 名用户
+              {search.trim() ? `匹配到 ${users.length} 名用户` : `共 ${users.length} 名用户`}
             </p>
           </div>
-          <Button className="cursor-pointer" onClick={() => setAddOpen(true)}>
-            <Plus className="size-4" /> 添加用户
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="w-44 pl-8 sm:w-56"
+                placeholder="搜索邮箱…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Button className="cursor-pointer" onClick={() => setAddOpen(true)}>
+              <Plus className="size-4" /> 添加用户
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-xl border">
@@ -357,6 +394,14 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
                         >
                           {u.role === 'admin' ? '设为普通用户' : '设为管理员'}
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="cursor-pointer text-destructive hover:text-destructive"
+                          onClick={() => setDeleteUser(u)}
+                        >
+                          <Trash2 className="size-3.5" /> 删除
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -369,6 +414,27 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
 
       <AddUserDialog open={addOpen} onOpenChange={setAddOpen} onCreated={load} />
       <OtpDialog user={otpUser} open={!!otpUser} onOpenChange={(o) => !o && setOtpUser(null)} />
+
+      <AlertDialog open={!!deleteUser} onOpenChange={(o) => !o && setDeleteUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>删除用户</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除 <span className="font-medium text-foreground">{deleteUser?.email}</span> 吗？
+              该用户绑定的所有 OTP 账户也会一并删除，且不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer">取消</AlertDialogCancel>
+            <AlertDialogAction
+              className="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteUser && handleDelete(deleteUser)}
+            >
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

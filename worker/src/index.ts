@@ -225,13 +225,18 @@ app.delete('/api/secrets/:id', async (c) => {
 
 app.use('/api/admin/*', requireAdmin)
 
-// 列出所有用户及其 OTP 账户数量
+// 列出所有用户及其 OTP 账户数量（支持按邮箱搜索）
 app.get('/api/admin/users', async (c) => {
+  const q = (c.req.query('q') ?? '').trim()
   const db = getDb(c.env)
+  const params: string[] = []
+  const where = q ? 'WHERE u.email LIKE ?' : ''
+  if (q) params.push(`%${q}%`)
   const result = await db.execute({
     sql: `SELECT u.id, u.email, u.role, u.created_at,
                  (SELECT COUNT(*) FROM totp_secrets s WHERE s.user_id = u.id) AS secret_count
-          FROM users u ORDER BY u.created_at ASC`,
+          FROM users u ${where} ORDER BY u.created_at ASC`,
+    args: params,
   })
   const users = result.rows.map((row) => ({
     id: String(row.id),
@@ -299,6 +304,35 @@ app.patch('/api/admin/users/:id', async (c) => {
     args: [role, id],
   })
   return c.json({ ok: true, role })
+})
+
+// 删除用户（同时删除其 OTP 账户；禁止删除自己或最后一名管理员）
+app.delete('/api/admin/users/:id', async (c) => {
+  const id = c.req.param('id')
+
+  // 禁止删除当前登录账号，避免误删自身
+  if (id === c.get('userId')) return c.json({ error: '不能删除当前登录的账号' }, 400)
+
+  const db = getDb(c.env)
+  const target = await db.execute({
+    sql: 'SELECT id, role FROM users WHERE id = ?',
+    args: [id],
+  })
+  if (target.rows.length === 0) return c.json({ error: '用户不存在' }, 404)
+  const currentRole = String(target.rows[0]!.role ?? 'user')
+
+  if (currentRole === 'admin') {
+    const admins = await db.execute({
+      sql: "SELECT COUNT(*) AS c FROM users WHERE role = 'admin'",
+    })
+    const adminCount = Number(admins.rows[0]?.c ?? 0)
+    if (adminCount <= 1) return c.json({ error: '至少需保留一名管理员，无法删除' }, 400)
+  }
+
+  // 先删除该用户的 OTP 账户，再删除用户本身
+  await db.execute({ sql: 'DELETE FROM totp_secrets WHERE user_id = ?', args: [id] })
+  await db.execute({ sql: 'DELETE FROM users WHERE id = ?', args: [id] })
+  return c.json({ ok: true })
 })
 
 // 查看某用户绑定的 OTP 账户及当前验证码

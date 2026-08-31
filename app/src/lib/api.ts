@@ -68,7 +68,8 @@ export const api = {
     request<{ ok: boolean }>(`/secrets/${id}`, { method: 'DELETE' }),
 
   // ── 管理后台 ──
-  listUsers: () => request<AdminUserListResponse>('/admin/users'),
+  listUsers: (q = '') =>
+    request<AdminUserListResponse>(`/admin/users${q ? `?q=${encodeURIComponent(q)}` : ''}`),
 
   createUser: (email: string, password: string, role: 'user' | 'admin') =>
     request<{ user: { id: string; email: string; role: 'user' | 'admin' } }>(
@@ -84,6 +85,9 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ role }),
     }),
+
+  deleteUser: (id: string) =>
+    request<{ ok: boolean }>(`/admin/users/${id}`, { method: 'DELETE' }),
 
   listUserSecrets: (id: string) =>
     request<AdminUserSecretsResponse>(`/admin/users/${id}/secrets`),
