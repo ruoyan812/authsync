@@ -20,6 +20,11 @@ const app = new Hono<AppEnv>()
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const BASE32_RE = /^[A-Z2-7]+={0,6}$/i
 
+// 邮箱归一化：去首尾空格 + 转小写，避免注册/登录因大小写或空格无法匹配
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
 function iterations(env: Env): number {
   const value = Number(env.PBKDF2_ITERATIONS)
   return Number.isFinite(value) && value > 0 ? value : 100_000
@@ -51,13 +56,14 @@ app.post('/api/auth/register', async (c) => {
     password?: string
   }
   if (!email || !password) return c.json({ error: '请填写邮箱和密码' }, 400)
-  if (!EMAIL_RE.test(email)) return c.json({ error: '邮箱格式不正确' }, 400)
+  const normalizedEmail = normalizeEmail(email)
+  if (!EMAIL_RE.test(normalizedEmail)) return c.json({ error: '邮箱格式不正确' }, 400)
   if (password.length < 8) return c.json({ error: '密码至少需要 8 位' }, 400)
 
   const db = getDb(c.env)
   const existing = await db.execute({
     sql: 'SELECT id FROM users WHERE email = ?',
-    args: [email],
+    args: [normalizedEmail],
   })
   if (existing.rows.length > 0) return c.json({ error: '该邮箱已注册，请直接登录' }, 409)
 
@@ -65,11 +71,11 @@ app.post('/api/auth/register', async (c) => {
   const passwordHash = await hashPassword(password, iterations(c.env))
   await db.execute({
     sql: 'INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)',
-    args: [id, email, passwordHash, Date.now()],
+    args: [id, normalizedEmail, passwordHash, Date.now()],
   })
 
-  const token = await signJwt({ sub: id, email }, c.env.JWT_SECRET)
-  return c.json({ token, user: { id, email } }, 201)
+  const token = await signJwt({ sub: id, email: normalizedEmail }, c.env.JWT_SECRET)
+  return c.json({ token, user: { id, email: normalizedEmail } }, 201)
 })
 
 app.post('/api/auth/login', async (c) => {
@@ -79,10 +85,11 @@ app.post('/api/auth/login', async (c) => {
   }
   if (!email || !password) return c.json({ error: '请填写邮箱和密码' }, 400)
 
+  const normalizedEmail = normalizeEmail(email)
   const db = getDb(c.env)
   const result = await db.execute({
     sql: 'SELECT id, email, password_hash FROM users WHERE email = ?',
-    args: [email],
+    args: [normalizedEmail],
   })
   const row = result.rows[0]
   if (!row) return c.json({ error: '邮箱或密码错误' }, 401)
