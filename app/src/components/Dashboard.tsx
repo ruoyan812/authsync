@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { LogOut, Plus, ShieldCheck, ShieldQuestion } from 'lucide-react'
+import { LogOut, Plus, ShieldCheck, ShieldQuestion, UserCog } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,7 +10,7 @@ import { api } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import type { TotpAccount } from '@/types'
 
-export function Dashboard() {
+export function Dashboard({ onOpenAdmin }: { onOpenAdmin: () => void }) {
   const { user, logout } = useAuth()
   const [accounts, setAccounts] = useState<TotpAccount[]>([])
   const [loading, setLoading] = useState(true)
@@ -70,6 +70,18 @@ export function Dashboard() {
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">{user?.email}</span>
+            {user?.role === 'admin' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="cursor-pointer"
+                onClick={onOpenAdmin}
+                aria-label="管理后台"
+              >
+                <UserCog className="size-4" />
+                <span className="hidden sm:inline">管理</span>
+              </Button>
+            )}
             <ThemeToggle />
             <Button variant="ghost" size="icon" className="cursor-pointer" onClick={logout} aria-label="退出登录">
               <LogOut className="size-4" />

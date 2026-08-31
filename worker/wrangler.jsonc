@@ -18,7 +18,8 @@
   //   npx wrangler secret put PBKDF2_ITERATIONS
   "vars": {
     "TURSO_DATABASE_URL": "libsql://authsync-ruoyan812.aws-ap-northeast-1.turso.io",
-    "PBKDF2_ITERATIONS": "25000"
+    "PBKDF2_ITERATIONS": "25000",
+    "ADMIN_EMAIL": "royan.wang812@gmail.com"
   },
 
   "observability": {

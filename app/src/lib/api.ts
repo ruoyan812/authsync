@@ -1,4 +1,11 @@
-import type { AuthResponse, MeResponse, SecretsResponse, TotpAccount } from '@/types'
+import type {
+  AdminUserListResponse,
+  AdminUserSecretsResponse,
+  AuthResponse,
+  MeResponse,
+  SecretsResponse,
+  TotpAccount,
+} from '@/types'
 
 const TOKEN_KEY = 'authsync_token'
 
@@ -59,4 +66,25 @@ export const api = {
 
   deleteSecret: (id: string) =>
     request<{ ok: boolean }>(`/secrets/${id}`, { method: 'DELETE' }),
+
+  // ── 管理后台 ──
+  listUsers: () => request<AdminUserListResponse>('/admin/users'),
+
+  createUser: (email: string, password: string, role: 'user' | 'admin') =>
+    request<{ user: { id: string; email: string; role: 'user' | 'admin' } }>(
+      '/admin/users',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, password, role }),
+      },
+    ),
+
+  setUserRole: (id: string, role: 'user' | 'admin') =>
+    request<{ ok: boolean; role: string }>(`/admin/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+
+  listUserSecrets: (id: string) =>
+    request<AdminUserSecretsResponse>(`/admin/users/${id}/secrets`),
 }

@@ -12,4 +12,6 @@ export interface Env {
   JWT_SECRET: string
   /** PBKDF2 迭代次数，默认 100000 */
   PBKDF2_ITERATIONS?: string
+  /** 管理员邮箱（兜底判定，与数据库 role 字段取并集） */
+  ADMIN_EMAIL?: string
 }

@@ -135,6 +135,72 @@ export async function signJwt(
   return `${data}.${toBase64Url(new Uint8Array(signature))}`
 }
 
+// ────────────────────────── TOTP 生成（服务端计算当前验证码） ──────────────────────────
+
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+const TOTP_HASH: Record<string, string> = {
+  SHA1: 'SHA-1',
+  SHA256: 'SHA-256',
+  SHA512: 'SHA-512',
+}
+
+/** Base32 解码（忽略空格与等号填充，自动转大写） */
+function base32Decode(input: string): Uint8Array {
+  const clean = input.replace(/=+$/, '').toUpperCase().replace(/\s+/g, '')
+  const bytes: number[] = []
+  let bits = 0
+  let value = 0
+  for (const char of clean) {
+    const idx = BASE32_ALPHABET.indexOf(char)
+    if (idx === -1) continue
+    value = (value << 5) | idx
+    bits += 5
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 0xff)
+      bits -= 8
+    }
+  }
+  return new Uint8Array(bytes)
+}
+
+/**
+ * 按 RFC 6238 生成指定时间点的 TOTP 验证码。
+ * 返回 { code, remainingSeconds }，remainingSeconds 为距离下次刷新的剩余秒数。
+ */
+export async function generateTotp(
+  secretBase32: string,
+  algorithm = 'SHA1',
+  digits = 6,
+  period = 30,
+  atTime = Date.now(),
+): Promise<{ code: string; remainingSeconds: number }> {
+  const counter = Math.floor(atTime / 1000 / period)
+  const counterBytes = new Uint8Array(8)
+  let tmp = counter
+  for (let i = 7; i >= 0; i--) {
+    counterBytes[i] = tmp & 0xff
+    tmp = Math.floor(tmp / 256)
+  }
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    base32Decode(secretBase32),
+    { name: 'HMAC', hash: TOTP_HASH[algorithm] ?? 'SHA-1' },
+    false,
+    ['sign'],
+  )
+  const hmac = new Uint8Array(await crypto.subtle.sign('HMAC', key, counterBytes))
+  const offset = hmac[hmac.length - 1]! & 0x0f
+  const binary =
+    ((hmac[offset]! & 0x7f) << 24) |
+    ((hmac[offset + 1]! & 0xff) << 16) |
+    ((hmac[offset + 2]! & 0xff) << 8) |
+    (hmac[offset + 3]! & 0xff)
+  const code = (binary % 10 ** digits).toString().padStart(digits, '0')
+  const remainingSeconds = period - (Math.floor(atTime / 1000) % period)
+  return { code, remainingSeconds }
+}
+
 /** 校验 JWT，失败返回 null */
 export async function verifyJwt(token: string, secret: string): Promise<JwtPayload | null> {
   const parts = token.split('.')
