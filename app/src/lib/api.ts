@@ -89,6 +89,12 @@ export const api = {
   deleteUser: (id: string) =>
     request<{ ok: boolean }>(`/admin/users/${id}`, { method: 'DELETE' }),
 
+  changeUserPassword: (id: string, password: string) =>
+    request<{ ok: boolean }>(`/admin/users/${id}/password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
+
   listUserSecrets: (id: string) =>
     request<AdminUserSecretsResponse>(`/admin/users/${id}/secrets`),
 }

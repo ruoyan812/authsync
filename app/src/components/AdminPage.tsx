@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { ArrowLeft, KeyRound, Loader2, LogOut, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react'
+import { ArrowLeft, KeyRound, Loader2, Lock, LogOut, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -246,6 +246,111 @@ function OtpDialog({
   )
 }
 
+function ChangePasswordDialog({
+  user,
+  open,
+  onOpenChange,
+}: {
+  user: AdminUser | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      setPassword('')
+      setConfirm('')
+      setError('')
+    }
+  }, [open])
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError('')
+    if (password.length < 8) {
+      setError('密码至少需要 8 位')
+      setBusy(false)
+      return
+    }
+    if (password !== confirm) {
+      setError('两次输入的密码不一致')
+      setBusy(false)
+      return
+    }
+    try {
+      await api.changeUserPassword(user!.id, password)
+      toast.success(`已重置 ${user!.email} 的密码`)
+      onOpenChange(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '操作失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>修改密码</DialogTitle>
+          <DialogDescription>为 {user?.email} 设置新密码</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="cp-password">新密码（至少 8 位）</Label>
+            <Input
+              id="cp-password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cp-confirm">确认新密码</Label>
+            <Input
+              id="cp-confirm"
+              type="password"
+              placeholder="••••••••"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              minLength={8}
+            />
+          </div>
+
+          {error && (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" className="cursor-pointer" onClick={() => onOpenChange(false)}>
+              取消
+            </Button>
+            <Button
+              type="submit"
+              className="cursor-pointer"
+              disabled={busy || password.length < 8 || confirm.length < 8}
+            >
+              {busy && <Loader2 className="size-4 animate-spin" />}
+              重置密码
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function AdminPage({ onBack }: { onBack: () => void }) {
   const { user, logout } = useAuth()
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -253,6 +358,7 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [otpUser, setOtpUser] = useState<AdminUser | null>(null)
+  const [pwUser, setPwUser] = useState<AdminUser | null>(null)
   const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null)
 
   const load = useCallback(async (q = '') => {
@@ -390,6 +496,14 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
                           variant="outline"
                           size="sm"
                           className="cursor-pointer"
+                          onClick={() => setPwUser(u)}
+                        >
+                          <Lock className="size-3.5" /> 修改密码
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer"
                           onClick={() => handleRoleChange(u, u.role === 'admin' ? 'user' : 'admin')}
                         >
                           {u.role === 'admin' ? '设为普通用户' : '设为管理员'}
@@ -414,6 +528,7 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
 
       <AddUserDialog open={addOpen} onOpenChange={setAddOpen} onCreated={load} />
       <OtpDialog user={otpUser} open={!!otpUser} onOpenChange={(o) => !o && setOtpUser(null)} />
+      <ChangePasswordDialog user={pwUser} open={!!pwUser} onOpenChange={(o) => !o && setPwUser(null)} />
 
       <AlertDialog open={!!deleteUser} onOpenChange={(o) => !o && setDeleteUser(null)}>
         <AlertDialogContent>

@@ -335,6 +335,27 @@ app.delete('/api/admin/users/:id', async (c) => {
   return c.json({ ok: true })
 })
 
+// 管理员重置用户密码（无需原密码）
+app.post('/api/admin/users/:id/password', async (c) => {
+  const id = c.req.param('id')
+  const { password } = (await c.req.json().catch(() => ({}))) as { password?: string }
+  if (!password || password.length < 8) return c.json({ error: '密码至少需要 8 位' }, 400)
+
+  const db = getDb(c.env)
+  const target = await db.execute({
+    sql: 'SELECT id FROM users WHERE id = ?',
+    args: [id],
+  })
+  if (target.rows.length === 0) return c.json({ error: '用户不存在' }, 404)
+
+  const passwordHash = await hashPassword(password, iterations(c.env))
+  await db.execute({
+    sql: 'UPDATE users SET password_hash = ? WHERE id = ?',
+    args: [passwordHash, id],
+  })
+  return c.json({ ok: true })
+})
+
 // 查看某用户绑定的 OTP 账户及当前验证码
 app.get('/api/admin/users/:id/secrets', async (c) => {
   const id = c.req.param('id')
