@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { ArrowLeft, KeyRound, Loader2, Lock, LogOut, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react'
+import { ArrowLeft, KeyRound, Loader2, Lock, LogOut, MoreVertical, Plus, Search, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,6 +20,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -42,6 +50,7 @@ import { Progress } from '@/components/ui/progress'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { api } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+import { AddAccountDialog } from '@/components/AddAccountDialog'
 import type { AdminSecret, AdminUser } from '@/types'
 
 function RoleBadge({ role }: { role: 'user' | 'admin' }) {
@@ -359,6 +368,7 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
   const [addOpen, setAddOpen] = useState(false)
   const [otpUser, setOtpUser] = useState<AdminUser | null>(null)
   const [pwUser, setPwUser] = useState<AdminUser | null>(null)
+  const [addOtpUser, setAddOtpUser] = useState<AdminUser | null>(null)
   const [deleteUser, setDeleteUser] = useState<AdminUser | null>(null)
 
   const load = useCallback(async (q = '') => {
@@ -483,40 +493,45 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
                     </TableCell>
                     <TableCell className="text-center">{u.secretCount}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="cursor-pointer"
-                          onClick={() => setOtpUser(u)}
-                        >
-                          <KeyRound className="size-3.5" /> 查看 OTP
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="cursor-pointer"
-                          onClick={() => setPwUser(u)}
-                        >
-                          <Lock className="size-3.5" /> 修改密码
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="cursor-pointer"
-                          onClick={() => handleRoleChange(u, u.role === 'admin' ? 'user' : 'admin')}
-                        >
-                          {u.role === 'admin' ? '设为普通用户' : '设为管理员'}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="cursor-pointer text-destructive hover:text-destructive"
-                          onClick={() => setDeleteUser(u)}
-                        >
-                          <Trash2 className="size-3.5" /> 删除
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="cursor-pointer"
+                            aria-label="更多操作"
+                          >
+                            <MoreVertical className="size-4" /> 操作
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuLabel className="truncate">{u.email}</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="cursor-pointer" onSelect={() => setOtpUser(u)}>
+                            <KeyRound className="size-4" /> 查看 OTP
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer" onSelect={() => setAddOtpUser(u)}>
+                            <Plus className="size-4" /> 添加 OTP
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer" onSelect={() => setPwUser(u)}>
+                            <Lock className="size-4" /> 修改密码
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onSelect={() => handleRoleChange(u, u.role === 'admin' ? 'user' : 'admin')}
+                          >
+                            <ShieldCheck className="size-4" />
+                            {u.role === 'admin' ? '设为普通用户' : '设为管理员'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                            onSelect={() => setDeleteUser(u)}
+                          >
+                            <Trash2 className="size-4" /> 删除用户
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -529,6 +544,16 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
       <AddUserDialog open={addOpen} onOpenChange={setAddOpen} onCreated={load} />
       <OtpDialog user={otpUser} open={!!otpUser} onOpenChange={(o) => !o && setOtpUser(null)} />
       <ChangePasswordDialog user={pwUser} open={!!pwUser} onOpenChange={(o) => !o && setPwUser(null)} />
+      <AddAccountDialog
+        open={!!addOtpUser}
+        onOpenChange={(o) => !o && setAddOtpUser(null)}
+        onAdd={async (payload) => {
+          if (!addOtpUser) return
+          await api.addUserSecret(addOtpUser.id, payload)
+          toast.success(`已为 ${addOtpUser.email} 添加 OTP 账户`)
+          load(search.trim())
+        }}
+      />
 
       <AlertDialog open={!!deleteUser} onOpenChange={(o) => !o && setDeleteUser(null)}>
         <AlertDialogContent>

@@ -97,4 +97,20 @@ export const api = {
 
   listUserSecrets: (id: string) =>
     request<AdminUserSecretsResponse>(`/admin/users/${id}/secrets`),
+
+  addUserSecret: (
+    id: string,
+    payload: {
+      issuer: string
+      accountName: string
+      secret: string
+      algorithm: string
+      digits: number
+      period: number
+    },
+  ) =>
+    request<{ item: TotpAccount }>(`/admin/users/${id}/secrets`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 }

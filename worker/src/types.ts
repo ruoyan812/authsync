@@ -14,4 +14,6 @@ export interface Env {
   PBKDF2_ITERATIONS?: string
   /** 管理员邮箱（兜底判定，与数据库 role 字段取并集） */
   ADMIN_EMAIL?: string
+  /** Resend 邮件发送 API Key（Secret） */
+  RESEND_API_KEY: string
 }

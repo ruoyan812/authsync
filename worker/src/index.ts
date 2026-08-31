@@ -10,6 +10,7 @@ import {
 } from './crypto'
 import { getDb } from './db'
 import type { Env } from './types'
+import { sendWelcomeEmail } from './email'
 
 type AppEnv = {
   Bindings: Env
@@ -97,6 +98,13 @@ app.post('/api/auth/register', async (c) => {
     sql: 'INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)',
     args: [id, normalizedEmail, passwordHash, Date.now()],
   })
+
+  // 发送注册欢迎邮件（失败不影响注册结果）
+  try {
+    await sendWelcomeEmail(normalizedEmail, c.env)
+  } catch (e) {
+    console.error('[register] 发送欢迎邮件失败:', e)
+  }
 
   const token = await signJwt({ sub: id, email: normalizedEmail }, c.env.JWT_SECRET)
   return c.json({ token, user: { id, email: normalizedEmail, role: 'user' } }, 201)
@@ -388,6 +396,51 @@ app.get('/api/admin/users/:id/secrets', async (c) => {
     })
   }
   return c.json({ items })
+})
+
+// 管理员为用户添加 OTP 密钥（写入指定用户账户，而非管理员自身）
+app.post('/api/admin/users/:id/secrets', async (c) => {
+  const id = c.req.param('id')
+  const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>
+  const issuer = String(body.issuer ?? '').trim()
+  const accountName = String(body.accountName ?? '').trim()
+  const secret = String(body.secret ?? '').replace(/\s+/g, '').toUpperCase()
+  const algorithm = String(body.algorithm ?? 'SHA1').toUpperCase()
+  const digits = Number(body.digits ?? 6)
+  const period = Number(body.period ?? 30)
+
+  if (!BASE32_RE.test(secret)) return c.json({ error: '密钥格式不正确（应为 Base32）' }, 400)
+  if (!accountName) return c.json({ error: '请填写账户名称' }, 400)
+  if (!['SHA1', 'SHA256', 'SHA512'].includes(algorithm)) return c.json({ error: '不支持的算法' }, 400)
+
+  const db = getDb(c.env)
+  const target = await db.execute({
+    sql: 'SELECT id FROM users WHERE id = ?',
+    args: [id],
+  })
+  if (target.rows.length === 0) return c.json({ error: '用户不存在' }, 404)
+
+  const newId = crypto.randomUUID()
+  const createdAt = Date.now()
+  await db.execute({
+    sql: `INSERT INTO totp_secrets (id, user_id, issuer, account_name, secret_enc, algorithm, digits, period, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      newId,
+      id,
+      issuer,
+      accountName,
+      await encryptSecret(secret, c.env.MASTER_KEY),
+      algorithm,
+      digits,
+      period,
+      createdAt,
+    ],
+  })
+  return c.json(
+    { item: { id: newId, issuer, accountName, algorithm, digits, period, createdAt, secret } },
+    201,
+  )
 })
 
 // ────────────────────────── 错误处理 ──────────────────────────
