@@ -5,9 +5,11 @@ import type {
   MeResponse,
   SecretsResponse,
   TotpAccount,
+  User,
 } from '@/types'
 
 const TOKEN_KEY = 'authsync_token'
+const USER_KEY = 'authsync_user'
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
@@ -16,6 +18,32 @@ export function getToken(): string | null {
 export function setToken(token: string | null) {
   if (token) localStorage.setItem(TOKEN_KEY, token)
   else localStorage.removeItem(TOKEN_KEY)
+}
+
+/** 读取本地缓存的账号信息（用于刷新/重开浏览器后立即恢复登录态） */
+export function getStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY)
+    return raw ? (JSON.parse(raw) as User) : null
+  } catch {
+    return null
+  }
+}
+
+/** 保存/清除本地缓存的账号信息 */
+export function setStoredUser(user: User | null) {
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))
+  else localStorage.removeItem(USER_KEY)
+}
+
+/** 带 HTTP 状态码的请求错误，便于区分「令牌失效」与「网络异常」 */
+export class RequestError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'RequestError'
+    this.status = status
+  }
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -29,7 +57,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`/api${path}`, { ...options, headers })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    throw new Error((data as { error?: string }).error || `请求失败（${res.status}）`)
+    throw new RequestError(
+      (data as { error?: string }).error || `请求失败（${res.status}）`,
+      res.status,
+    )
   }
   return data as T
 }

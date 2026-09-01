@@ -55,9 +55,13 @@ import type { AdminSecret, AdminUser } from '@/types'
 
 function RoleBadge({ role }: { role: 'user' | 'admin' }) {
   return role === 'admin' ? (
-    <Badge className="bg-primary/15 text-primary hover:bg-primary/20">管理员</Badge>
+    <Badge className="border-transparent bg-red-500/15 text-red-600 hover:bg-red-500/20 dark:text-red-400">
+      管理员
+    </Badge>
   ) : (
-    <Badge variant="secondary">普通用户</Badge>
+    <Badge className="border-transparent bg-blue-500/15 text-blue-600 hover:bg-blue-500/20 dark:text-blue-400">
+      普通用户
+    </Badge>
   )
 }
 
