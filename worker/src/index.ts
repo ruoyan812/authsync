@@ -100,11 +100,7 @@ app.post('/api/auth/register', async (c) => {
   })
 
   // 发送注册欢迎邮件（失败不影响注册结果）
-  try {
-    await sendWelcomeEmail(normalizedEmail, c.env)
-  } catch (e) {
-    console.error('[register] 发送欢迎邮件失败:', e)
-  }
+  await sendWelcomeEmail(normalizedEmail, c.env)
 
   const token = await signJwt({ sub: id, email: normalizedEmail }, c.env.JWT_SECRET)
   return c.json({ token, user: { id, email: normalizedEmail, role: 'user' } }, 201)

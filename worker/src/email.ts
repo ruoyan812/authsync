@@ -62,30 +62,39 @@ function buildWelcomeHtml(email: string): string {
 </html>`
 }
 
-/** 注册成功后发送欢迎邮件；失败仅记录日志，不影响注册结果 */
-export async function sendWelcomeEmail(to: string, env: Env): Promise<void> {
+/** 注册成功后发送欢迎邮件；返回发送诊断结果 */
+export async function sendWelcomeEmail(
+  to: string,
+  env: Env,
+): Promise<{ ok: boolean; keyPresent: boolean; status?: number; error?: string }> {
   if (!env.RESEND_API_KEY) {
     console.warn('[email] 未配置 RESEND_API_KEY，跳过欢迎邮件发送')
-    return
+    return { ok: false, keyPresent: false, error: 'missing-key' }
   }
 
-  const res = await fetch(RESEND_API, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: FROM,
-      to: [to],
-      subject: '欢迎加入 Yanverse · 2FA',
-      html: buildWelcomeHtml(to),
-    }),
-  })
+  try {
+    const res = await fetch(RESEND_API, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: FROM,
+        to: [to],
+        subject: '欢迎加入 Yanverse · 2FA',
+        html: buildWelcomeHtml(to),
+      }),
+    })
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    console.error('[email] Resend 发送失败:', res.status, text)
-    throw new Error(`Resend 发送失败: ${res.status}`)
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      console.error('[email] Resend 发送失败:', res.status, text)
+      return { ok: false, keyPresent: true, status: res.status, error: text }
+    }
+    return { ok: true, keyPresent: true, status: res.status }
+  } catch (e) {
+    console.error('[email] 调用 Resend 异常:', e)
+    return { ok: false, keyPresent: true, error: String(e) }
   }
 }
