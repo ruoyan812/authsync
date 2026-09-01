@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { HomeButton } from '@/components/HomeButton'
 import { AccountCard } from '@/components/AccountCard'
 import { AddAccountDialog } from '@/components/AddAccountDialog'
 import { api } from '@/lib/api'
@@ -82,6 +83,7 @@ export function Dashboard({ onOpenAdmin }: { onOpenAdmin: () => void }) {
                 <span className="hidden sm:inline">管理</span>
               </Button>
             )}
+            <HomeButton />
             <ThemeToggle />
             <Button variant="ghost" size="icon" className="cursor-pointer" onClick={logout} aria-label="退出登录">
               <LogOut className="size-4" />
@@ -114,7 +116,7 @@ export function Dashboard({ onOpenAdmin }: { onOpenAdmin: () => void }) {
             <ShieldQuestion className="mb-4 size-14 text-muted-foreground/50" />
             <h2 className="text-lg font-semibold">还没有添加任何账户</h2>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              从网站或手机验证器截取二维码，或用 otpauth:// 链接添加你的第一个两步验证账户
+              用摄像头直接拍照、从网站截取二维码，或用 otpauth:// 链接添加你的第一个两步验证账户
             </p>
             <Button className="mt-6 cursor-pointer" onClick={() => setDialogOpen(true)}>
               <Plus className="size-4" /> 添加第一个账户

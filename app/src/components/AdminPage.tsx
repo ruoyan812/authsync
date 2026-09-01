@@ -48,6 +48,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { HomeButton } from '@/components/HomeButton'
 import { api } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { AddAccountDialog } from '@/components/AddAccountDialog'
@@ -433,6 +434,7 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
 
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">{user?.email}</span>
+            <HomeButton />
             <ThemeToggle />
             <Button variant="ghost" size="icon" className="cursor-pointer" onClick={logout} aria-label="退出登录">
               <LogOut className="size-4" />

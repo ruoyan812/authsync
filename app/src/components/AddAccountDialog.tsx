@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ClipboardPaste, Keyboard, Loader2, QrCode, ScanLine } from 'lucide-react'
+import { Camera, ClipboardPaste, Keyboard, Loader2, QrCode, ScanLine } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { CameraScanner } from '@/components/CameraScanner'
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,7 @@ interface Props {
 }
 
 export function AddAccountDialog({ open, onOpenChange, onAdd }: Props) {
-  const [tab, setTab] = useState<'qr' | 'manual'>('qr')
+  const [tab, setTab] = useState<'qr' | 'camera' | 'manual'>('qr')
   const [parsed, setParsed] = useState<ParsedOtpauth | null>(null)
   const [form, setForm] = useState({ issuer: '', accountName: '', secret: '' })
   const [preview, setPreview] = useState<string | null>(null)
@@ -150,14 +151,17 @@ export function AddAccountDialog({ open, onOpenChange, onAdd }: Props) {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>添加两步验证账户</DialogTitle>
-          <DialogDescription>通过二维码截图、剪切板或手动输入密钥添加账户</DialogDescription>
+          <DialogDescription>通过摄像头拍照、二维码截图、剪切板或手动输入密钥添加账户</DialogDescription>
         </DialogHeader>
 
         {!parsed ? (
-          <Tabs value={tab} onValueChange={(v) => setTab(v as 'qr' | 'manual')}>
+          <Tabs value={tab} onValueChange={(v) => setTab(v as 'qr' | 'camera' | 'manual')}>
             <TabsList className="w-full">
               <TabsTrigger value="qr" className="flex-1 cursor-pointer">
-                <QrCode className="size-4" /> 扫描二维码
+                <QrCode className="size-4" /> 二维码
+              </TabsTrigger>
+              <TabsTrigger value="camera" className="flex-1 cursor-pointer">
+                <Camera className="size-4" /> 拍照
               </TabsTrigger>
               <TabsTrigger value="manual" className="flex-1 cursor-pointer">
                 <Keyboard className="size-4" /> 手动输入
@@ -210,6 +214,16 @@ export function AddAccountDialog({ open, onOpenChange, onAdd }: Props) {
                 {busy ? <Loader2 className="size-4 animate-spin" /> : <ClipboardPaste className="size-4" />}
                 从剪切板读取图片
               </Button>
+            </TabsContent>
+
+            <TabsContent value="camera" className="space-y-3">
+              <CameraScanner
+                onDetected={(p) => {
+                  applyParsed(p)
+                  setPreview(null)
+                  setError('')
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="manual" className="space-y-3">
