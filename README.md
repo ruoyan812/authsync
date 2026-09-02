@@ -1,6 +1,6 @@
 # AuthSync — Web 版两步验证（2FA）管理器
 
-线上地址：**https://2fa.roooooyan.work**（Cloudflare Workers 自定义域名）
+线上地址：https://2fa.roooooyan.work （Cloudflare Workers 自定义域名）
 
 在浏览器中管理您的 TOTP 两步验证动态码，功能对标手机 Authenticator 应用。
 
