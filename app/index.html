@@ -12,6 +12,9 @@
     />
     <link rel="icon" type="image/svg+xml" href="https://img.roooooyan.work/file/favicon.svg" />
     <title>Yanverse · 2FA</title>
+    <!-- 邮箱验证码服务：必须放在 head 内。该脚本以「文档中最后一个 script 标签」
+         推断自身服务地址，若放在 body 的模块脚本之后会误判成应用自身路径而请求 404。 -->
+    <script src="https://otp.login.roooooyan.work/otp.js"></script>
   </head>
   <body>
     <div id="root"></div>
