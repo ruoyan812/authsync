@@ -439,6 +439,49 @@ app.post('/api/admin/users/:id/secrets', async (c) => {
   )
 })
 
+// ────────────────────────── 邮箱验证码（注册时验证邮箱） ──────────────────────────
+
+// 上游 otp.login.roooooyan.work 未正确处理 CORS 预检（OPTIONS 返回 404 且无 CORS 头），
+// 导致浏览器无法直接 POST /api/otp/verify。因此在服务端转发，前端只与同源接口通信。
+const OTP_BASE = 'https://otp.login.roooooyan.work'
+
+app.get('/api/email-otp/start', async (c) => {
+  const email = (c.req.query('email') ?? '').trim().toLowerCase()
+  if (!EMAIL_RE.test(email)) return c.json({ status: 'invalid', error: '邮箱格式不正确' }, 400)
+
+  const upstream = await fetch(
+    `${OTP_BASE}/api/otp/start?email=${encodeURIComponent(email)}`,
+  ).catch(() => null)
+  if (!upstream?.ok) {
+    return c.json({ status: 'error', error: '验证码服务暂时不可用，请稍后重试' }, 502)
+  }
+  const data = await upstream.json().catch(() => ({}))
+  return c.json(data as Record<string, unknown>)
+})
+
+app.post('/api/email-otp/verify', async (c) => {
+  const { email, code } = (await c.req.json().catch(() => ({}))) as {
+    email?: string
+    code?: string
+  }
+  const normalizedEmail = String(email ?? '').trim().toLowerCase()
+  const trimmedCode = String(code ?? '').trim()
+  if (!EMAIL_RE.test(normalizedEmail) || !trimmedCode) {
+    return c.json({ status: 'invalid', error: '请填写邮箱和验证码' }, 400)
+  }
+
+  const upstream = await fetch(`${OTP_BASE}/api/otp/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: normalizedEmail, code: trimmedCode }),
+  }).catch(() => null)
+  if (!upstream?.ok) {
+    return c.json({ status: 'error', error: '验证码校验服务暂时不可用，请稍后重试' }, 502)
+  }
+  const data = await upstream.json().catch(() => ({}))
+  return c.json(data as Record<string, unknown>)
+})
+
 // ────────────────────────── 错误处理 ──────────────────────────
 
 app.notFound((c) => c.env.ASSETS.fetch(c.req.raw))
