@@ -17,12 +17,12 @@ export function DeviceScaleDebug() {
   const [fontSize, setFontSize] = useState(16)
   const [visible, setVisible] = useState(true)
   const prevDevice = useRef(device)
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>()
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     let raf = 0
     const scheduleHide = () => {
-      clearTimeout(hideTimer.current)
+      clearTimeout(hideTimer.current ?? undefined)
       hideTimer.current = setTimeout(() => setVisible(false), 3000)
     }
     const update = () => {
@@ -46,7 +46,7 @@ export function DeviceScaleDebug() {
     window.addEventListener('orientationchange', onResize)
     return () => {
       cancelAnimationFrame(raf)
-      clearTimeout(hideTimer.current)
+      clearTimeout(hideTimer.current ?? undefined)
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onResize)
     }
