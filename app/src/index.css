@@ -72,6 +72,8 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: "Fira Sans", system-ui, -apple-system, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 }
 

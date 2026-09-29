@@ -278,7 +278,7 @@ export function AddAccountDialog({ open, onOpenChange, onAdd }: Props) {
             )}
 
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="f-issuer">服务商（可选）</Label>
                   <Input

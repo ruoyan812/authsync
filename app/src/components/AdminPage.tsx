@@ -455,7 +455,7 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="w-44 pl-8 sm:w-56"
+                className="w-36 pl-8 sm:w-44 md:w-56"
                 placeholder="搜索邮箱…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -467,8 +467,8 @@ export function AdminPage({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border">
-          <Table>
+        <div className="overflow-x-auto rounded-xl border">
+          <Table className="min-w-[640px]">
             <TableHeader>
               <TableRow>
                 <TableHead>邮箱</TableHead>

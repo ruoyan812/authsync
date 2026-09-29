@@ -3,6 +3,7 @@ import { Check, Copy, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { useNow } from '@/hooks/useNow'
 import { generateCode } from '@/lib/totp'
+import { brandLogoUrl } from '@/lib/brand'
 import { cn } from '@/lib/utils'
 import type { TotpAccount } from '@/types'
 
@@ -57,17 +58,39 @@ export function AccountCard({ account, onDelete }: Props) {
 
   const ringColor = remaining <= 5 ? 'text-destructive' : 'text-primary'
 
+  const logoUrl = useMemo(
+    () => brandLogoUrl(account.issuer, account.accountName),
+    [account.issuer, account.accountName],
+  )
+  const [logoOk, setLogoOk] = useState(false)
+
   return (
-    <Card className="group relative overflow-hidden p-5 transition-all duration-200 hover:shadow-lg hover:shadow-primary/5">
+    <Card className="group relative overflow-hidden p-4 transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 sm:p-5">
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <div
-            className={cn(
-              'flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm',
-              colorFor(account.issuer || account.accountName),
+          <div className="relative size-10 shrink-0">
+            {/* 兜底：首字母头像（始终作为背景层，logo 加载成功后覆盖在其上） */}
+            <div
+              className={cn(
+                'absolute inset-0 flex items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm',
+                colorFor(account.issuer || account.accountName),
+              )}
+            >
+              {initials}
+            </div>
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt={account.issuer || account.accountName}
+                className={cn(
+                  'absolute inset-0 size-10 rounded-xl bg-white object-contain p-1 ring-1 ring-border',
+                  logoOk ? 'opacity-100' : 'opacity-0',
+                )}
+                loading="lazy"
+                onLoad={() => setLogoOk(true)}
+                onError={() => setLogoOk(false)}
+              />
             )}
-          >
-            {initials}
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-muted-foreground">{account.issuer || '自定义账户'}</p>
@@ -95,7 +118,7 @@ export function AccountCard({ account, onDelete }: Props) {
         <span
           key={code}
           className={cn(
-            'font-code text-4xl font-bold tracking-[0.18em] tabular-nums transition-all duration-200',
+            'font-code text-3xl font-bold tracking-[0.18em] tabular-nums transition-all duration-200 sm:text-4xl',
             'animate-[code-pop_0.25s_ease-out]',
           )}
         >

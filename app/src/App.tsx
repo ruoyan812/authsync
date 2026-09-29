@@ -4,6 +4,8 @@ import { AuthPage } from '@/components/AuthPage'
 import { Dashboard } from '@/components/Dashboard'
 import { AdminPage } from '@/components/AdminPage'
 import { AuthProvider, useAuth } from '@/hooks/useAuth'
+import { useDeviceScale } from '@/hooks/useDeviceScale'
+import { DeviceScaleDebug } from '@/components/DeviceScaleDebug'
 
 function AppShell() {
   const { user, loading } = useAuth()
@@ -27,9 +29,11 @@ function AppShell() {
 }
 
 export default function App() {
+  useDeviceScale()
   return (
     <AuthProvider>
       <AppShell />
+      <DeviceScaleDebug />
     </AuthProvider>
   )
 }

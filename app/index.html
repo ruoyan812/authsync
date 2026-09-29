@@ -2,7 +2,19 @@
 <html lang="zh-CN" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      // 首屏即按设备视口缩放根字号，避免 JS 加载完成前的布局闪烁
+      (function () {
+        var w = document.documentElement.clientWidth || window.innerWidth || 1280;
+        var device = w < 640 ? 'mobile' : w < 1024 ? 'tablet' : 'desktop';
+        document.documentElement.setAttribute('data-device', device);
+        var ratio = w / 1280;
+        ratio = Math.min(Math.max(ratio, 0.82), 1.12);
+        var size = Math.min(Math.max(16 * ratio, 13), 18);
+        document.documentElement.style.fontSize = size.toFixed(2) + 'px';
+      })();
+    </script>
     <meta name="description" content="AuthSync - 在浏览器中管理您的两步验证（2FA / TOTP）动态验证码" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
